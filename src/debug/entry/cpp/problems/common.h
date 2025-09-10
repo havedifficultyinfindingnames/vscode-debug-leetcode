@@ -2,17 +2,15 @@
 #ifndef COMMON_DEFINE
 #define COMMON_DEFINE
 
-#include <vector>
-#include <string>
-#include <cstring>
+#include <bits/stdc++.h>
 using namespace std;
 
 struct ListNode {
-    int val;
-    ListNode *next;
-    ListNode() : val(0), next(nullptr) {}
-    ListNode(int x) : val(x), next(nullptr) {}
-    ListNode(int x, ListNode *next) : val(x), next(next) {}
+	int val;
+	ListNode *next;
+	ListNode() : val(0), next(nullptr) {}
+	ListNode(int x) : val(x), next(nullptr) {}
+	ListNode(int x, ListNode *next) : val(x), next(next) {}
 };
 
 int parseNumber(cJSON *node);
@@ -30,22 +28,22 @@ vector<ListNode *> parseListNodeArray(const vector<vector<int>> &vec);
 class NestedInteger
 {
 private:
-    vector<NestedInteger> list{};
-    int value;
+	vector<NestedInteger> list{};
+	int value;
 
 public:
-    NestedInteger(cJSON *node);
+	NestedInteger(cJSON *node);
 
-    // Return true if this NestedInteger holds a single integer, rather than a nested list.
-    bool isInteger() const;
+	// Return true if this NestedInteger holds a single integer, rather than a nested list.
+	bool isInteger() const;
 
-    // Return the single integer that this NestedInteger holds, if it holds a single integer
-    // The result is undefined if this NestedInteger holds a nested list
-    int getInteger() const;
+	// Return the single integer that this NestedInteger holds, if it holds a single integer
+	// The result is undefined if this NestedInteger holds a nested list
+	int getInteger() const;
 
-    // Return the nested list that this NestedInteger holds, if it holds a nested list
-    // The result is undefined if this NestedInteger holds a single integer
-    const vector<NestedInteger> &getList() const;
+	// Return the nested list that this NestedInteger holds, if it holds a nested list
+	// The result is undefined if this NestedInteger holds a single integer
+	const vector<NestedInteger> &getList() const;
 };
 
 vector<NestedInteger> parseNestedIntegerArray(cJSON *node);
@@ -53,20 +51,20 @@ vector<NestedInteger> parseNestedIntegerArray(cJSON *node);
 class MountainArray
 {
 private:
-    vector<int> value{};
+	vector<int> value{};
 
 public:
-    MountainArray(const vector<int> &ve);
-    int get(int index);
-    int length();
+	MountainArray(const vector<int> &ve);
+	int get(int index);
+	int length();
 };
 
 struct TreeNode
 {
-    int val;
-    TreeNode *left;
-    TreeNode *right;
-    TreeNode(int x) : val(x), left(NULL), right(NULL)
+	int val;
+	TreeNode *left;
+	TreeNode *right;
+	TreeNode(int x) : val(x), left(NULL), right(NULL)
     {
     }
 };
