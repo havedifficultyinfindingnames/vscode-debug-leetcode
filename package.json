@@ -62,6 +62,21 @@
                         "clang compiler"
                     ],
                     "scope": "resource"
+                },
+                "debug-leetcode.cppStandard": {
+                    "type": "string",
+                    "default": "c++23",
+                    "enum": [
+                        "c++98",
+                        "c++03",
+                        "c++11",
+                        "c++14",
+                        "c++17",
+                        "c++20",
+                        "c++23"
+                    ],
+                    "description": "C++ standard to use. LeetCode.com currently (20250910) uses c++23.",
+                    "scope": "resource"
                 }
             }
         }
