@@ -409,9 +409,11 @@ using namespace std;
         const debugConfig = getGdbDefaultConfig();
         try {
             const includePath: string = path.dirname(exePath);
+            const cppStandard = vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ?? 'c++23';
             await executeCommand(
                 'g++',
                 [
+                    `-std=${cppStandard}`,
                     '-g',
                     program,
                     commonDestPath,
@@ -461,10 +463,11 @@ using namespace std;
         const debugConfig = getClangDefaultConfig();
         try {
             const includePath: string = path.dirname(exePath);
+            const cppStandard = vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ?? 'c++23';
             await executeCommand(
                 '/usr/bin/clang++',
                 [
-                    '-std=c++17',
+                    `-std=${cppStandard}`,
                     '-stdlib=libc++',
                     '-g',
                     program,
