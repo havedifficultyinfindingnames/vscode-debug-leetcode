@@ -204,8 +204,9 @@ using namespace std;
             .replace(codeRegExp, insertCode);
         await fse.writeFile(entryFile, newEntryFileContent);
 
-        const extDir: string = vscode.extensions.getExtension('wangtao0101.debug-leetcode')!
-            .extensionPath;
+        const extDir: string = vscode.extensions.getExtension(
+            'wangtao0101.debug-leetcode',
+        )!.extensionPath;
 
         // copy common.h
         const commonHeaderPath: string = path.join(extDir, 'src/debug/entry/cpp/problems/common.h');
@@ -409,7 +410,9 @@ using namespace std;
         const debugConfig = getGdbDefaultConfig();
         try {
             const includePath: string = path.dirname(exePath);
-            const cppStandard = vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ?? 'c++23';
+            const cppStandard =
+                vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ??
+                'c++23';
             await executeCommand(
                 'g++',
                 [
@@ -463,7 +466,9 @@ using namespace std;
         const debugConfig = getClangDefaultConfig();
         try {
             const includePath: string = path.dirname(exePath);
-            const cppStandard = vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ?? 'c++23';
+            const cppStandard =
+                vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ??
+                'c++23';
             await executeCommand(
                 '/usr/bin/clang++',
                 [

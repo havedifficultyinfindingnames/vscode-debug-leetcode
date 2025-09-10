@@ -2,9 +2,8 @@ import * as vscode from 'vscode';
 import { fileMeta, canDebug } from '../utils/problemUtils';
 
 export class CustomCodeLensProvider implements vscode.CodeLensProvider {
-    private onDidChangeCodeLensesEmitter: vscode.EventEmitter<void> = new vscode.EventEmitter<
-        void
-    >();
+    private onDidChangeCodeLensesEmitter: vscode.EventEmitter<void> =
+        new vscode.EventEmitter<void>();
 
     get onDidChangeCodeLenses(): vscode.Event<void> {
         return this.onDidChangeCodeLensesEmitter.event;

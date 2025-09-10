@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 
 class LeetCodeChannel implements vscode.Disposable {
-    private readonly channel: vscode.OutputChannel = vscode.window.createOutputChannel(
-        'Debug LeetCode',
-    );
+    private readonly channel: vscode.OutputChannel =
+        vscode.window.createOutputChannel('Debug LeetCode');
 
     public appendLine(message: string): void {
         this.channel.appendLine(message);
