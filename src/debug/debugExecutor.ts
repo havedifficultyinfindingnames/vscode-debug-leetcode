@@ -60,6 +60,29 @@ class DebugExecutor {
         this.start();
     }
 
+    private getCppDebuggerType(): 'cppdbg' | 'lldb' | undefined {
+        const cppExtension = vscode.extensions.getExtension('ms-vscode.cpptools');
+        const clangdExtension = vscode.extensions.getExtension(
+            'llvm-vs-code-extensions.vscode-clangd',
+        );
+        const codelldbExtension = vscode.extensions.getExtension('vadimcn.vscode-lldb');
+        if (cppExtension?.isActive) {
+            vscode.window.showInformationMessage('Detected Microsoft C/C++ extension.');
+            return 'cppdbg';
+        }
+        if (clangdExtension?.isActive && codelldbExtension?.isActive) {
+            vscode.window.showInformationMessage('Detected clangd and CodeLLDB extensions.');
+            return 'lldb';
+        }
+        if (codelldbExtension?.isActive) {
+            vscode.window.showInformationMessage(
+                'Detected CodeLLDB extension. For best experience, consider installing clangd extension as well.',
+            );
+            return 'lldb';
+        }
+        return undefined;
+    }
+
     public async execute(
         filePath: string,
         testString: string,
@@ -67,10 +90,27 @@ class DebugExecutor {
     ): Promise<string | undefined> {
         if (this.server == null || this.server.address() == null) {
             vscode.window.showErrorMessage('Debug server error, maybe you can restart vscode.');
+            return;
         }
 
         if (language === 'cpp') {
-            await cppExecutor.execute(filePath, testString, language, this.server.address().port);
+            const debuggerType = this.getCppDebuggerType();
+            if (!debuggerType) {
+                vscode.window.showErrorMessage(
+                    'No suitable C++ debugger found. Please install one of the following extensions:\n' +
+                        '• Microsoft C/C++ (ms-vscode.cpptools) for cppdbg debugger\n' +
+                        '• clangd (llvm-vs-code-extensions.vscode-clangd) + CodeLLDB (vadimcn.vscode-lldb) for lldb debugger',
+                );
+                return;
+            }
+
+            await cppExecutor.execute(
+                filePath,
+                testString,
+                language,
+                this.server.address().port,
+                debuggerType,
+            );
             return;
         }
 

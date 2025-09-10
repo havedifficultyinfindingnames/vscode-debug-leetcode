@@ -15,29 +15,6 @@ import problemTypes from '../../problems/problemTypes';
 import { isWindows } from '../../utils/osUtils';
 import { getExtensionContext } from '../../extension';
 
-function getGdbDefaultConfig(): IDebugConfig {
-    return {
-        type: 'cppdbg',
-        MIMode: 'gdb',
-        setupCommands: [
-            {
-                description: 'Enable pretty-printing for gdb',
-                text: '-enable-pretty-printing',
-                ignoreFailures: true,
-            },
-        ],
-        miDebuggerPath: isWindows() ? 'gdb.exe' : 'gdb',
-    };
-}
-
-function getClangDefaultConfig(): IDebugConfig {
-    return {
-        type: 'cppdbg',
-        MIMode: 'lldb',
-        externalConsole: false,
-    };
-}
-
 const templateMap: any = {
     116: [117],
     429: [559, 589, 590],
@@ -57,6 +34,7 @@ class CppExecutor {
         testString: string,
         language: string,
         port: number,
+        debuggerType: 'cppdbg' | 'lldb',
     ): Promise<string | undefined> {
         const sourceFileContent: string = (await fse.readFile(filePath)).toString();
         const meta: { id: string; lang: string } | null = fileMeta(sourceFileContent);
@@ -85,8 +63,6 @@ class CppExecutor {
         if (!moduleExportsReg.test(sourceFileContent)) {
             const newContent: string =
                 `// @before-stub-for-debug-begin
-#include <vector>
-#include <string>
 #include "${commonHeaderName}"
 
 using namespace std;
@@ -251,30 +227,22 @@ using namespace std;
         const thirdPartyPath: string = path.join(extDir, 'src/debug/thirdparty/c');
         const jsonPath: string = path.join(extDir, 'src/debug/thirdparty/c/cJSON.c');
 
-        const compiler =
-            vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppCompiler') ?? 'gdb';
+        const compiler = vscode.workspace
+            .getConfiguration('debug-leetcode')
+            .get<string>('cppCompiler');
         let debugConfig: any;
-        if (compiler === 'clang') {
-            debugConfig = await this.getClangDebugConfig({
-                program,
-                exePath,
-                commonDestPath,
-                jsonPath,
-                thirdPartyPath,
-                filePath,
-                newSourceFilePath,
-            });
-        } else {
-            debugConfig = await this.getGdbDebugConfig({
-                program,
-                exePath,
-                commonDestPath,
-                jsonPath,
-                thirdPartyPath,
-                filePath,
-                newSourceFilePath,
-            });
-        }
+        // 在选择调试配置时使用 debuggerType 参数
+        debugConfig = await this.getDebugConfig(
+            program,
+            exePath,
+            commonDestPath,
+            jsonPath,
+            thirdPartyPath,
+            filePath,
+            newSourceFilePath,
+            compiler,
+            debuggerType,
+        );
 
         if (debugConfig == null) {
             return;
@@ -389,103 +357,70 @@ using namespace std;
         return;
     }
 
-    private async getGdbDebugConfig({
-        program,
-        exePath,
-        commonDestPath,
-        jsonPath,
-        thirdPartyPath,
-        filePath,
-        newSourceFilePath,
-    }: {
-        program: string;
-        exePath: string;
-        commonDestPath: string;
-        jsonPath: string;
-        thirdPartyPath: string;
-        filePath: string;
-        newSourceFilePath: string;
-    }) {
-        const debugConfig = getGdbDefaultConfig();
-        try {
-            const includePath: string = path.dirname(exePath);
-            const cppStandard =
-                vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ??
-                'c++23';
-            await executeCommand(
-                'g++',
-                [
-                    `-std=${cppStandard}`,
-                    '-g',
-                    program,
-                    commonDestPath,
-                    jsonPath,
-                    '-o',
-                    exePath,
-                    '-I',
-                    includePath,
-                    '-I',
-                    thirdPartyPath,
-                ],
-                { shell: false },
-            );
-        } catch (e) {
-            vscode.window.showErrorMessage(e);
-            leetCodeChannel.append(e.stack);
-            leetCodeChannel.show();
-            return;
+    private async getDebugConfig(
+        program: string,
+        exePath: string,
+        commonDestPath: string,
+        jsonPath: string,
+        thirdPartyPath: string,
+        filePath: string,
+        newSourceFilePath: string,
+        cppCompiler: string | undefined,
+        debuggerType: 'cppdbg' | 'lldb',
+    ) {
+        const debugConfig: IDebugConfig = {
+            type: debuggerType,
+        };
+
+        // 根据调试器类型设置特定配置
+        if (debuggerType === 'lldb') {
+            debugConfig.externalConsole = false;
+        } else {
+            debugConfig.setupCommands = [
+                {
+                    description: 'Enable pretty-printing for gdb',
+                    text: '-enable-pretty-printing',
+                    ignoreFailures: true,
+                },
+            ];
+            debugConfig.miDebuggerPath = isWindows() ? 'gdb.exe' : 'gdb';
         }
 
-        debugConfig.program = exePath;
-        debugConfig.cwd = extensionState.cachePath;
-        // map build source file to user source file
-        debugConfig.sourceFileMap = {
-            [newSourceFilePath]: filePath,
-        };
-        return debugConfig;
-    }
-
-    private async getClangDebugConfig({
-        program,
-        exePath,
-        commonDestPath,
-        jsonPath,
-        thirdPartyPath,
-        filePath,
-        newSourceFilePath,
-    }: {
-        program: string;
-        exePath: string;
-        commonDestPath: string;
-        jsonPath: string;
-        thirdPartyPath: string;
-        filePath: string;
-        newSourceFilePath: string;
-    }) {
-        const debugConfig = getClangDefaultConfig();
         try {
             const includePath: string = path.dirname(exePath);
             const cppStandard =
                 vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ??
                 'c++23';
-            await executeCommand(
-                '/usr/bin/clang++',
-                [
-                    `-std=${cppStandard}`,
-                    '-stdlib=libc++',
-                    '-g',
-                    program,
-                    commonDestPath,
-                    jsonPath,
-                    '-o',
-                    exePath,
-                    '-I',
-                    includePath,
-                    '-I',
-                    thirdPartyPath,
-                ],
-                { shell: false },
-            );
+
+            // 根据 cppCompiler 配置和 debuggerType 选择编译器
+            let compiler: string;
+            if (cppCompiler) {
+                compiler = cppCompiler;
+            } else {
+                // 如果 cppCompiler 为空，根据 debuggerType 设置默认值
+                compiler = debuggerType === 'lldb' ? 'clang++' : 'g++';
+            }
+
+            const compilerArgs = [
+                `-std=${cppStandard}`,
+                '-g',
+                program,
+                commonDestPath,
+                jsonPath,
+                '-o',
+                exePath,
+                '-I',
+                includePath,
+                '-I',
+                thirdPartyPath,
+            ];
+
+            // 为 clang++ 添加额外参数
+            if (compiler.includes('clang')) {
+                compilerArgs.splice(2, 0, '-stdlib=libc++');
+            }
+
+            await executeCommand(compiler, compilerArgs, { shell: false });
         } catch (e) {
             vscode.window.showErrorMessage(e);
             leetCodeChannel.append(e.stack);

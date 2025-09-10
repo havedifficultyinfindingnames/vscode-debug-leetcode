@@ -52,14 +52,14 @@
                 },
                 "debug-leetcode.cppCompiler": {
                     "type": "string",
-                    "default": "gdb",
+                    "default": "g++",
                     "enum": [
-                        "gdb",
-                        "clang"
+                        "g++",
+                        "clang++"
                     ],
                     "enumDescriptions": [
-                        "gdb compiler",
-                        "clang compiler"
+                        "g++ compiler",
+                        "clang++ compiler"
                     ],
                     "scope": "resource"
                 },
