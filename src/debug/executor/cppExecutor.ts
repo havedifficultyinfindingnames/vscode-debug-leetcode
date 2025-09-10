@@ -52,33 +52,22 @@ class CppExecutor {
 
         const program = await getEntryFile(meta.lang, meta.id);
 
-        const newSourceFileName: string = `source${language}problem${meta.id}.cpp`;
-        const newSourceFilePath: string = path.join(extensionState.cachePath, newSourceFileName);
-
         const commonHeaderName: string = `common${language}problem${meta.id}.h`;
         const commonImplementName: string = `common${language}problem${meta.id}.cpp`;
 
-        // check whether module.exports is exist or not
         const moduleExportsReg: RegExp = /\/\/ @before-stub-for-debug-begin/;
         if (!moduleExportsReg.test(sourceFileContent)) {
             const newContent: string =
                 `// @before-stub-for-debug-begin
 #include "${commonHeaderName}"
-
-using namespace std;
 // @before-stub-for-debug-end\n\n` + sourceFileContent;
             await fse.writeFile(filePath, newContent);
-
-            // create source file for build because g++ does not support inlucde file with chinese name
-            await fse.writeFile(newSourceFilePath, newContent);
-        } else {
-            await fse.writeFile(newSourceFilePath, sourceFileContent);
         }
 
         const params: string[] = testString.split('\\n');
         const paramsType: string[] = problemType.paramTypes;
         if (params.length !== paramsType.length) {
-            vscode.window.showErrorMessage('Input parameters is not match the problem!');
+            vscode.window.showErrorMessage('Input parameters do not match the problem!');
             return;
         }
 
@@ -168,16 +157,13 @@ using namespace std;
             )});\n`;
         }
 
-        // insert include code and replace function namem
         const includeFileRegExp: RegExp = /\/\/ @@stub\-for\-include\-code@@/;
         const codeRegExp: RegExp = /\/\/ @@stub\-for\-body\-code@@/;
         const entryFile: string = program;
         const entryFileContent: string = (await fse.readFile(entryFile)).toString();
+
         const newEntryFileContent: string = entryFileContent
-            .replace(
-                includeFileRegExp,
-                `#include "${commonHeaderName}"\n#include "${newSourceFileName}"`,
-            )
+            .replace(includeFileRegExp, `#include "${path.basename(filePath)}"`)
             .replace(codeRegExp, insertCode);
         await fse.writeFile(entryFile, newEntryFileContent);
 
@@ -231,15 +217,13 @@ using namespace std;
             .getConfiguration('debug-leetcode')
             .get<string>('cppCompiler');
         let debugConfig: any;
-        // 在选择调试配置时使用 debuggerType 参数
-        debugConfig = await this.getDebugConfig(
+        debugConfig = await this.compileAndGetDebugConfig(
             program,
             exePath,
             commonDestPath,
             jsonPath,
             thirdPartyPath,
             filePath,
-            newSourceFilePath,
             compiler,
             debuggerType,
         );
@@ -270,81 +254,6 @@ using namespace std;
         if (debuging) {
             const debugSessionDisposes: vscode.Disposable[] = [];
 
-            vscode.debug.breakpoints.map((bp: vscode.SourceBreakpoint) => {
-                if (bp.location.uri.fsPath === newSourceFilePath) {
-                    vscode.debug.removeBreakpoints([bp]);
-                }
-            });
-
-            vscode.debug.breakpoints.map((bp: vscode.SourceBreakpoint) => {
-                if (bp.location.uri.fsPath === filePath) {
-                    const location: vscode.Location = new vscode.Location(
-                        vscode.Uri.file(newSourceFilePath),
-                        bp.location.range,
-                    );
-                    vscode.debug.addBreakpoints([
-                        new vscode.SourceBreakpoint(
-                            location,
-                            bp.enabled,
-                            bp.condition,
-                            bp.hitCondition,
-                            bp.logMessage,
-                        ),
-                    ]);
-                }
-            });
-
-            debugSessionDisposes.push(
-                vscode.debug.onDidChangeBreakpoints((event: vscode.BreakpointsChangeEvent) => {
-                    event.added.map((bp: vscode.SourceBreakpoint) => {
-                        if (bp.location.uri.fsPath === filePath) {
-                            const location: vscode.Location = new vscode.Location(
-                                vscode.Uri.file(newSourceFilePath),
-                                bp.location.range,
-                            );
-                            vscode.debug.addBreakpoints([
-                                new vscode.SourceBreakpoint(
-                                    location,
-                                    bp.enabled,
-                                    bp.condition,
-                                    bp.hitCondition,
-                                    bp.logMessage,
-                                ),
-                            ]);
-                        }
-                    });
-
-                    event.removed.map((bp: vscode.SourceBreakpoint) => {
-                        if (bp.location.uri.fsPath === filePath) {
-                            const location: vscode.Location = new vscode.Location(
-                                vscode.Uri.file(newSourceFilePath),
-                                bp.location.range,
-                            );
-                            vscode.debug.removeBreakpoints([new vscode.SourceBreakpoint(location)]);
-                        }
-                    });
-
-                    event.changed.map((bp: vscode.SourceBreakpoint) => {
-                        if (bp.location.uri.fsPath === filePath) {
-                            const location: vscode.Location = new vscode.Location(
-                                vscode.Uri.file(newSourceFilePath),
-                                bp.location.range,
-                            );
-                            vscode.debug.removeBreakpoints([new vscode.SourceBreakpoint(location)]);
-                            vscode.debug.addBreakpoints([
-                                new vscode.SourceBreakpoint(
-                                    location,
-                                    bp.enabled,
-                                    bp.condition,
-                                    bp.hitCondition,
-                                    bp.logMessage,
-                                ),
-                            ]);
-                        }
-                    });
-                }),
-            );
-
             debugSessionDisposes.push(
                 vscode.debug.onDidTerminateDebugSession((event: vscode.DebugSession) => {
                     if (event.name === debugSessionName) {
@@ -357,14 +266,13 @@ using namespace std;
         return;
     }
 
-    private async getDebugConfig(
+    private async compileAndGetDebugConfig(
         program: string,
         exePath: string,
         commonDestPath: string,
         jsonPath: string,
         thirdPartyPath: string,
         filePath: string,
-        newSourceFilePath: string,
         cppCompiler: string | undefined,
         debuggerType: 'cppdbg' | 'lldb',
     ) {
@@ -372,7 +280,6 @@ using namespace std;
             type: debuggerType,
         };
 
-        // 根据调试器类型设置特定配置
         if (debuggerType === 'lldb') {
             debugConfig.externalConsole = false;
         } else {
@@ -388,22 +295,31 @@ using namespace std;
 
         try {
             const includePath: string = path.dirname(exePath);
+            const userFileDir: string = path.dirname(filePath);
+
             const cppStandard =
                 vscode.workspace.getConfiguration('debug-leetcode').get<string>('cppStandard') ??
                 'c++23';
 
-            // 根据 cppCompiler 配置和 debuggerType 选择编译器
             let compiler: string;
             if (cppCompiler) {
                 compiler = cppCompiler;
             } else {
-                // 如果 cppCompiler 为空，根据 debuggerType 设置默认值
                 compiler = debuggerType === 'lldb' ? 'clang++' : 'g++';
             }
+            if (debuggerType === 'lldb' && !compiler.includes('clang')) {
+                const errorMsg = `LLDB debugger requires clang++ compiler, but got: ${compiler}. Please set 'debug-leetcode.cppCompiler' to empty or 'clang++' in VS Code settings.`;
+                vscode.window.showErrorMessage(errorMsg);
+                leetCodeChannel.append(`[ERROR] ${errorMsg}`);
+                leetCodeChannel.show();
+                return;
+            }
 
-            const compilerArgs = [
+            const compileArgs = [
                 `-std=${cppStandard}`,
                 '-g',
+                '-Wall',
+                '-Wno-deprecated',
                 program,
                 commonDestPath,
                 jsonPath,
@@ -412,15 +328,20 @@ using namespace std;
                 '-I',
                 includePath,
                 '-I',
+                userFileDir,
+                '-I',
                 thirdPartyPath,
             ];
 
-            // 为 clang++ 添加额外参数
             if (compiler.includes('clang')) {
-                compilerArgs.splice(2, 0, '-stdlib=libc++');
+                compileArgs.push('-stdlib=libstdc++');
             }
 
-            await executeCommand(compiler, compilerArgs, { shell: false });
+            await this.generateCompileCommands(userFileDir, program, compiler, compileArgs);
+
+            leetCodeChannel.appendLine(`${compiler} ${compileArgs.join(' ')}`);
+            leetCodeChannel.appendLine('');
+            await executeCommand(compiler, compileArgs, { shell: false });
         } catch (e) {
             vscode.window.showErrorMessage(e);
             leetCodeChannel.append(e.stack);
@@ -430,11 +351,57 @@ using namespace std;
 
         debugConfig.program = exePath;
         debugConfig.cwd = extensionState.cachePath;
-        // map build source file to user source file
-        debugConfig.sourceFileMap = {
-            [newSourceFilePath]: filePath,
-        };
         return debugConfig;
+    }
+
+    private async generateCompileCommands(
+        userFileDir: string,
+        program: string,
+        compiler: string,
+        compileArgs: string[],
+    ): Promise<void> {
+        try {
+            const compileCommands = {
+                directory: path.dirname(program),
+                command: `${compiler} ${compileArgs.join(' ')} -c ${program}`,
+                file: program,
+            };
+
+            const compileCommandsPath = path.join(userFileDir, 'compile_commands.json');
+
+            let existingCommands: any[] = [];
+
+            try {
+                const existingContent = await fse.readFile(compileCommandsPath, 'utf8');
+                const parsed = JSON.parse(existingContent);
+                if (Array.isArray(parsed)) {
+                    existingCommands = parsed;
+                }
+            } catch (readError) {
+                if ((readError as any).code !== 'ENOENT') {
+                    leetCodeChannel.appendLine(
+                        `Warning: Failed to parse existing compile_commands.json, creating new file: ${readError}`,
+                    );
+                }
+                existingCommands = [];
+            }
+
+            const existingIndex = existingCommands.findIndex((cmd) => cmd.file === program);
+            if (existingIndex >= 0) {
+                existingCommands[existingIndex] = compileCommands;
+                leetCodeChannel.appendLine(
+                    `Updated existing entry in compile_commands.json for: ${program}`,
+                );
+            } else {
+                existingCommands.push(compileCommands);
+            }
+
+            await fse.writeFile(compileCommandsPath, JSON.stringify(existingCommands, null, 2));
+        } catch (error) {
+            leetCodeChannel.appendLine(
+                `Warning: Failed to generate compile_commands.json: ${error}`,
+            );
+        }
     }
 }
 

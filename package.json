@@ -52,12 +52,14 @@
                 },
                 "debug-leetcode.cppCompiler": {
                     "type": "string",
-                    "default": "g++",
+                    "default": "",
                     "enum": [
+                        "",
                         "g++",
                         "clang++"
                     ],
                     "enumDescriptions": [
+                        "",
                         "g++ compiler",
                         "clang++ compiler"
                     ],

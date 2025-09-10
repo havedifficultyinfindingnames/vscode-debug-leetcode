@@ -1,9 +1,3 @@
-#include <vector>
-#include <queue>
-using namespace std;
-
-#include "cJSON.h"
-
 // @@stub-for-include-code@@
 
 int parseNumber(cJSON *node)
