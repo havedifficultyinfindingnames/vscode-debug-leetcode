@@ -1,10 +1,10 @@
 {
     "name": "debug-leetcode",
     "displayName": "Debug LeetCode",
-    "description": "Solve LeetCode problems in VS Code and enjoy debugging",
-    "version": "0.2.3",
-    "author": "wangtao0101",
-    "publisher": "wangtao0101",
+    "description": "My personal fix for debug-leetcode",
+    "version": "0.0.1",
+    "author": "havedifficultyinfindingnames",
+    "publisher": "havedifficultyinfindingnames",
     "license": "MIT",
     "icon": "resources/LeetCode.png",
     "engines": {
@@ -12,9 +12,9 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/wangtao0101/vscode-debug-leetcode"
+        "url": "https://github.com/havedifficultyinfindingnames/vscode-debug-leetcode"
     },
-    "homepage": "https://github.com/wangtao0101/vscode-debug-leetcode/blob/master/README.md",
+    "homepage": "https://github.com/havedifficultyinfindingnames/vscode-debug-leetcode/blob/master/README.md",
     "categories": [
         "Other",
         "Snippets"
