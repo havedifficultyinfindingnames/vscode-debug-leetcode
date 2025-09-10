@@ -60,6 +60,9 @@ class CppExecutor {
             const newContent: string =
                 `// @before-stub-for-debug-begin
 #include "${commonHeaderName}"
+// Intentionally include the header again for clangd
+#include <bits/stdc++.h>
+using namespace std;
 // @before-stub-for-debug-end\n\n` + sourceFileContent;
             await fse.writeFile(filePath, newContent);
         }

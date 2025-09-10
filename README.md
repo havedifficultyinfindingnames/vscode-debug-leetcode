@@ -33,7 +33,7 @@
 
 ### Requirement
 
--   Step 1. Install the [C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) for Visual Studio Code. **or**  
+-   Step 1. Install the [C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) for Visual Studio Code. **or**
 Step 1. Install the [CodeLLDB](https://marketplace.visualstudio.com/items?itemName=vadimcn.vscode-lldb) and [clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd) for Visual Studio Code.
 
 -   Step 2. Install gcc or clang with gnu sysroot.
@@ -68,6 +68,9 @@ For cpp
 ```cpp
 // @before-stub-for-debug-begin
 #include "commoncppproblem4.h"
+// Intentionally include the header again for clangd
+#include <bits/stdc++.h>
+using namespace std;
 // @before-stub-for-debug-end
 ```
 
